@@ -101,11 +101,11 @@ func (c *Client) initTest() error {
 		return errors.New("failed to create test instance")
 	}
 
-	// 将配置应用到测试对象
-	c.applyConfig()
-
-	// 初始化协议
+	// 先初始化协议列表
 	c.test.Init()
+
+	// 然后应用配置（包括设置协议）
+	c.applyConfig()
 
 	return nil
 }
@@ -314,11 +314,11 @@ func (s *Server) initTest() error {
 		return errors.New("failed to create test instance")
 	}
 
-	// 将配置应用到测试对象
-	s.applyConfig()
-
-	// 初始化协议
+	// 先初始化协议列表
 	s.test.Init()
+
+	// 然后应用配置
+	s.applyConfig()
 
 	return nil
 }
