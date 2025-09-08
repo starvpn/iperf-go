@@ -116,6 +116,13 @@ func (test *IperfTest) checkThrottle(sp *iperfStream, now time.Time) {
 
 func (test *IperfTest) sendParams() int {
 	Log.Debugf("Enter send_params")
+
+	// 检查协议是否已设置
+	if test.proto == nil {
+		Log.Errorf("Protocol not set")
+		return -1
+	}
+
 	params := stream_params{
 		ProtoName:     test.proto.name(),
 		Reverse:       test.reverse,
@@ -364,7 +371,7 @@ func (test *IperfTest) initTest() int {
 }
 
 func (test *IperfTest) Init() {
-	test.protocols = append(test.protocols, new(TCPProto), new(rudpProto), new(kcpProto))
+	test.protocols = append(test.protocols, new(TCPProto), new(UDPProto), new(rudpProto), new(kcpProto))
 }
 
 func (test *IperfTest) ParseArguments() int {

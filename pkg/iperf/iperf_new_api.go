@@ -105,13 +105,15 @@ func (c *Client) initTest() error {
 	c.test.Init()
 
 	// 然后应用配置（包括设置协议）
-	c.applyConfig()
+	if err := c.applyConfig(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // applyConfig 应用配置到测试对象
-func (c *Client) applyConfig() {
+func (c *Client) applyConfig() error {
 	c.test.isServer = (c.config.Role == RoleServer)
 	c.test.addr = c.config.ServerAddr
 	c.test.port = c.config.Port
@@ -122,7 +124,9 @@ func (c *Client) applyConfig() {
 	c.test.streamNum = c.config.Parallel
 
 	// 设置协议
-	c.test.setProtocol(c.config.Protocol)
+	if c.test.setProtocol(c.config.Protocol) < 0 {
+		return fmt.Errorf("unsupported protocol: %s", c.config.Protocol)
+	}
 
 	// 应用设置
 	c.test.setting.blksize = c.config.Blksize
@@ -140,6 +144,8 @@ func (c *Client) applyConfig() {
 
 	// 设置模式
 	c.test.setTestReverse(c.config.Reverse)
+
+	return nil
 }
 
 // Run 运行测试（阻塞直到完成）
@@ -318,13 +324,15 @@ func (s *Server) initTest() error {
 	s.test.Init()
 
 	// 然后应用配置
-	s.applyConfig()
+	if err := s.applyConfig(); err != nil {
+		return err
+	}
 
 	return nil
 }
 
 // applyConfig 应用配置到测试对象
-func (s *Server) applyConfig() {
+func (s *Server) applyConfig() error {
 	s.test.isServer = true
 	s.test.port = s.config.Port
 	s.test.duration = uint(s.config.Duration.Seconds())
@@ -348,6 +356,8 @@ func (s *Server) applyConfig() {
 
 	// 设置模式
 	s.test.setTestReverse(s.config.Reverse)
+
+	return nil
 }
 
 // Start 启动服务器
