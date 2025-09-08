@@ -7,7 +7,7 @@ import (
 
 	"github.com/op/go-logging"
 	//"github.com/gotestyourself/gotest.tools/assert"
-	"gotest.tools/assert"
+	"gotest.tools/v3/assert"
 	//"github.com/stretchr/testify/assert"
 )
 

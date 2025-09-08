@@ -10,12 +10,12 @@ import (
 	"golang.org/x/sys/unix"
 )
 
-func save_tcpInfo(sp *iperfStream, rp *iperf_interval_results) int {
+func saveTCPInfo(sp *iperfStream, rp *iperf_interval_results) int {
 	info := getTCPInfo(sp.conn)
 
-	rp.rtt = uint(info.Tcpi_rtt)
-	rp.rto = uint(info.Tcpi_rto)
-	rp.interval_retrans = uint(info.Tcpi_total_retrans)
+	rp.rtt = uint(info.Rtt)
+	rp.rto = uint(info.Rto)
+	rp.interval_retrans = uint(info.Total_retrans)
 
 	return 0
 }
@@ -44,12 +44,12 @@ func getTCPInfo(conn net.Conn) *unix.TCPInfo {
 
 func PrintTCPInfo(info *unix.TCPInfo) {
 	fmt.Printf("TcpInfo: rcv_rtt:%v\trtt:%v\tretransmits:%v\trto:%v\tlost:%v\tretrans:%v\ttotal_retrans:%v\n",
-		info.Tcpi_rcv_rtt,
-		info.Tcpi_rtt,
-		info.Tcpi_retransmits,
-		info.Tcpi_rto,
-		info.Tcpi_lost,
-		info.Tcpi_retrans,
-		info.Tcpi_total_retrans,
+		info.Rcv_rtt,
+		info.Rtt,
+		info.Retransmits,
+		info.Rto,
+		info.Lost,
+		info.Retrans,
+		info.Total_retrans,
 	)
 }
