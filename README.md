@@ -22,7 +22,12 @@ This implementation draws inspiration from iperf3's C source code and is built i
 Server side:
 
 ```bash
-./iperf-go -s
+./iperf-go -s  # 单次测试模式（原版）
+```
+
+**🆕 持续运行服务器（推荐）**：
+```bash
+./iperf-server-loop -p 5201  # 持续运行，自动处理多个客户端
 ```
 
 Client side (default parameters):
@@ -100,6 +105,37 @@ Send/read block size (default 4096)
   -wb uint
         Write buffer size (KB) (default 4096)
 ```
+
+### 🆕 Continuous Server Mode (New Feature)
+
+The original iperf-go server stops after handling one client test. We've added a continuous server mode that keeps running and handles multiple clients automatically:
+
+**Command Line Usage:**
+```bash
+# Build the continuous server
+go build -o iperf-server-loop cmd/iperf-server-loop/main.go
+
+# Run continuous server
+./iperf-server-loop -p 5201
+
+# The server will now:
+# ✅ Accept multiple client connections
+# ✅ Automatically reset after each test
+# ✅ Keep running until manually stopped (Ctrl+C)
+```
+
+**API Usage:**
+```go
+// Using the new ContinuousServer API
+config := iperf.ServerConfig(5201)
+server, _ := iperf.NewContinuousServer(config)
+server.Start()  // Runs continuously
+```
+
+For more details, see:
+- [Complete Solution Guide](COMPLETE_SOLUTION.md)
+- [API Usage Guide](API_USAGE_GUIDE.md)
+- [Examples](examples/)
 
 ### Custom Protocol Testing
 

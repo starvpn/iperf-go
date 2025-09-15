@@ -360,7 +360,7 @@ func (s *Server) applyConfig() error {
 	return nil
 }
 
-// Start 启动服务器
+// Start 启动服务器（单次测试模式）
 func (s *Server) Start() error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -388,6 +388,22 @@ func (s *Server) Start() error {
 	}()
 
 	return nil
+}
+
+// StartContinuous 启动服务器（持续运行模式）
+func (s *Server) StartContinuous() error {
+	// 使用ContinuousServer实现持续运行
+	continuousServer, err := NewContinuousServer(s.config)
+	if err != nil {
+		return err
+	}
+
+	// 转发事件处理器
+	if s.eventHandler != nil {
+		continuousServer.SetEventHandler(s.eventHandler)
+	}
+
+	return continuousServer.Start()
 }
 
 func (s *Server) RunTest() error {

@@ -42,7 +42,7 @@ func TestServer(t *testing.T) {
 		t.Fatalf("Failed to create server: %v", err)
 	}
 
-	err = server.RunTest()
+	err = server.StartContinuous()
 	if err != nil {
 		t.Fatalf("Failed to start server: %v", err)
 	}

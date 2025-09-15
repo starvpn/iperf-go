@@ -1,15 +1,35 @@
-# ignore .xml
-*.xml
-# Generated files
-bin/
-gen/
-out/
-# Gradle files
-.gradle/
-build/
-release/
-.idea/
-*.xml
+# 编译产物
 *.exe
-iperf-go
-iperf-go-macos
+cmd/iperf-go
+cmd/iperf-server-loop/iperf-server-loop
+examples/api_server
+examples/simple_server
+
+# 日志文件
+*.log
+
+# 测试输出
+client_*.log
+server_*.log
+test*.log
+continuous_server.log
+api_server.log
+
+# 测试脚本（已删除）
+test_*.sh
+
+# IDE文件
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Go构建缓存
+vendor/
+go.work
+go.work.sum
+
+# OS文件
+.DS_Store
+Thumbs.db
