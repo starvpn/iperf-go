@@ -17,6 +17,7 @@ type ContinuousServer struct {
 	cancel       context.CancelFunc
 	eventHandler EventHandler
 	testCount    int
+	currentTest  *IperfTest // 保存当前运行的测试实例
 }
 
 // NewContinuousServer 创建持续运行服务器
@@ -107,44 +108,72 @@ func (s *ContinuousServer) runLoop() {
 		// 应用配置
 		s.applyConfig(test)
 
-		// 运行测试
+		// 保存当前测试实例
+		s.mu.Lock()
+		s.currentTest = test
+		s.mu.Unlock()
+
+		// 在新协程中运行测试，以便能响应停止信号
+		testDone := make(chan int)
+		go func() {
+			rtn := test.runServer()
+			testDone <- rtn
+		}()
+
+		// 等待测试完成或停止信号
+		var rtn int
 		startTime := time.Now()
-		rtn := test.runServer()
-		duration := time.Since(startTime)
 
-		if rtn < 0 {
-			fmt.Printf("[测试 #%d] 测试失败，错误码: %d\n", testNum, rtn)
-			s.emitEvent(Event{
-				Type:      EventError,
-				Timestamp: time.Now(),
-				Error:     fmt.Errorf("test failed with code: %d", rtn),
-				Data:      map[string]interface{}{"test_num": testNum},
-			})
+		select {
+		case <-s.ctx.Done():
+			// 收到停止信号，关闭当前测试
+			fmt.Printf("[测试 #%d] 收到停止信号，关闭测试...\n", testNum)
+			s.cleanupTest(test)
+			return
 
-			// 根据错误类型决定等待时间
-			if rtn == -1 {
-				time.Sleep(2 * time.Second) // 监听失败
+		case rtn = <-testDone:
+			// 测试正常完成
+			duration := time.Since(startTime)
+
+			if rtn < 0 {
+				fmt.Printf("[测试 #%d] 测试失败，错误码: %d\n", testNum, rtn)
+				s.emitEvent(Event{
+					Type:      EventError,
+					Timestamp: time.Now(),
+					Error:     fmt.Errorf("test failed with code: %d", rtn),
+					Data:      map[string]interface{}{"test_num": testNum},
+				})
+
+				// 根据错误类型决定等待时间
+				if rtn == -1 {
+					time.Sleep(2 * time.Second) // 监听失败
+				} else {
+					time.Sleep(500 * time.Millisecond)
+				}
 			} else {
-				time.Sleep(500 * time.Millisecond)
-			}
-		} else {
-			fmt.Printf("[测试 #%d] 测试成功完成 (耗时: %.2f秒)\n", testNum, duration.Seconds())
+				fmt.Printf("[测试 #%d] 测试成功完成 (耗时: %.2f秒)\n", testNum, duration.Seconds())
 
-			// 创建测试结果
-			result := &TestResult{
-				TotalBytes: test.bytesReceived + test.bytesSent,
-				Duration:   duration,
-				Bandwidth:  float64((test.bytesReceived+test.bytesSent)*8) / duration.Seconds() / 1000000, // Mbps
-			}
+				// 创建测试结果
+				result := &TestResult{
+					TotalBytes: test.bytesReceived + test.bytesSent,
+					Duration:   duration,
+					Bandwidth:  float64((test.bytesReceived+test.bytesSent)*8) / duration.Seconds() / 1000000, // Mbps
+				}
 
-			s.emitEvent(Event{
-				Type:      EventComplete,
-				Timestamp: time.Now(),
-				Data:      result,
-			})
+				s.emitEvent(Event{
+					Type:      EventComplete,
+					Timestamp: time.Now(),
+					Data:      result,
+				})
+			}
 
 			// 清理资源
 			s.cleanupTest(test)
+
+			// 清除当前测试引用
+			s.mu.Lock()
+			s.currentTest = nil
+			s.mu.Unlock()
 
 			// 短暂等待
 			time.Sleep(200 * time.Millisecond)
@@ -232,6 +261,19 @@ func (s *ContinuousServer) Stop() {
 	}
 
 	s.running = false
+
+	// 如果有当前运行的测试，立即关闭它的监听器
+	if s.currentTest != nil {
+		fmt.Println("关闭当前运行的测试监听器...")
+		if s.currentTest.listener != nil {
+			s.currentTest.listener.Close()
+		}
+		if s.currentTest.protoListener != nil {
+			s.currentTest.protoListener.Close()
+		}
+	}
+
+	// 发送取消信号
 	s.cancel()
 
 	fmt.Printf("服务器已停止，共处理了 %d 次测试\n", s.testCount)
