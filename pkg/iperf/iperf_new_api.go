@@ -390,6 +390,32 @@ func (s *Server) Start() error {
 	return nil
 }
 
+func (s *Server) RunTest() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.running {
+		return errors.New("server already running")
+	}
+
+	s.running = true
+
+	// 设置回调
+	s.test.statsCallback = iperfStatsCallback
+	s.test.reporterCallback = iperfReporterCallback
+
+	if rtn := s.test.RunTest(); rtn < 0 {
+		s.emitEvent(Event{
+			Type:      EventError,
+			Timestamp: time.Now(),
+			Error:     fmt.Errorf("server failed with code: %d", rtn),
+		})
+	}
+	s.running = false
+
+	return nil
+}
+
 // Stop 停止服务器
 func (s *Server) Stop() {
 	s.mu.Lock()
